@@ -12,7 +12,7 @@ public class User {
     private String name;
     private String email;
     private String password;
-    public Boolean isOauth;
+    private Boolean isOauth;
 
     public User() {}
 
