@@ -112,28 +112,52 @@ public class SecurityController {
         return theResponse;
     }
 
-    public HashMap<String, Object> loginJwt(HashMap<String, Object> theResponse, User theActualUser, User theNewUser) {
-        if (theActualUser.getPassword().equals(theEncryptionService.convertSHA256(theNewUser.getPassword())) && !theActualUser.getIsOauth()) {
-            String code2FA = this.theNotificationService.generateCode2FA();
-            this.theNotificationService.send2FACode(theActualUser.getEmail(), code2FA);
+    // ...existing code...
+    public HashMap<String, Object> loginJwt(HashMap<String, Object> theResponse,
+                                            User theActualUser,
+                                            User theNewUser) {
+        // Validaciones básicas
+        if (theActualUser == null ||
+                Boolean.TRUE.equals(theActualUser.getIsOauth()) ||
+                !theActualUser.getPassword()
+                        .equals(theEncryptionService.convertSHA256(theNewUser.getPassword()))) {
+            theResponse.put("status", HttpServletResponse.SC_UNAUTHORIZED);
+            return theResponse;
+        }
 
-            Date codeExpiration = new Date(System.currentTimeMillis() + 10 * 60 * 1000); // 10 minutos
+        // Obtener (o crear) Profile
+        Profile profile = theProfileRepository.findByUserId(theActualUser.get_id());
+        if (profile == null) {
+            profile = new Profile(null, theActualUser, null);
+            profile = theProfileRepository.save(profile);
+        }
+
+        // Verificar flag en Profile (NO en User)
+        if (Boolean.TRUE.equals(profile.getTwoFactorEnabled())) {
+            String code2FA = theNotificationService.generateCode2FA();
+            theNotificationService.send2FACode(theActualUser.getEmail(), code2FA);
+            Date codeExpiration = new Date(System.currentTimeMillis() + 10 * 60 * 1000);
+
             Session session = new Session(null, codeExpiration, code2FA);
             session.setUser(theActualUser);
             session.setIntentos(0);
-            Session savedSession = this.theSessionRepository.save(session);
+            Session savedSession = theSessionRepository.save(session);
 
             theResponse.put("2fa_required", true);
             theResponse.put("message", "Código 2FA enviado al correo");
             theResponse.put("sessionId", savedSession.get_id());
-
-
-        } else {
-            theResponse.put("Status", HttpServletResponse.SC_UNAUTHORIZED);
-
+            return theResponse;
         }
+
+        // Sin 2FA: emitir token directo
+        String token = theJwtService.generateToken(theActualUser);
+        List<Permission> permissions = authServices.getRolesByUser(theActualUser);
+        theResponse.put("2fa_required", false);
+        theResponse.put("token", token);
+        theResponse.put("permissions", permissions);
         return theResponse;
     }
+// ...existing code...
 
     @PostMapping("login")
     public HashMap<String, Object> login(@RequestBody LoginRequest request,

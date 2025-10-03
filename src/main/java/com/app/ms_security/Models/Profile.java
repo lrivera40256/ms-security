@@ -11,6 +11,8 @@ public class Profile {
     @Id
     private String _id;
     private String phone;
+    private Boolean twoFactorEnabled = false;
+
 
     @DBRef
     private User user;
