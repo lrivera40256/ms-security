@@ -12,13 +12,15 @@ public class User {
     private String name;
     private String email;
     private String password;
+    public Boolean isOauth;
 
     public User() {}
 
-    public User(String name, String email, String password) {
+    public User(String name, String email, String password,boolean isOauth) {
         this.name = name;
         this.email = email;
         this.password = password;
+        this.isOauth = isOauth;
     }
 
     public String get_id() {
@@ -52,4 +54,11 @@ public class User {
     public void setPassword(String password) {
         this.password = password;
     }
+    public Boolean getIsOauth() {
+        return this.isOauth;
+    }
+    public void setIsOauth(boolean isOauth) {
+        this.isOauth = isOauth;
+    }
+
 }
