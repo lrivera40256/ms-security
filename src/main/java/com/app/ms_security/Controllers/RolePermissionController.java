@@ -3,6 +3,7 @@ package com.app.ms_security.Controllers;
 import com.app.ms_security.Models.Role;
 import com.app.ms_security.Models.Permission;
 import com.app.ms_security.Models.RolePermission;
+import com.app.ms_security.Models.UserRole;
 import com.app.ms_security.Repositories.RoleRepository;
 import com.app.ms_security.Repositories.PermissionRepository;
 import com.app.ms_security.Repositories.RolePermissionRepository;
@@ -57,8 +58,26 @@ public class RolePermissionController {
         }
     }
     @GetMapping("role/{roleId}")
-    public List<RolePermission> findPermissionsByRole(@PathVariable String roleId){
-        return this.theRolePermissionRepository.getPermissionsByRole(roleId);
+    public List<Permission> findPermissionsByRole(@PathVariable String roleId){
+        return this.theRolePermissionRepository.getPermissionsByRole(roleId).stream().map(RolePermission::getPermission).toList();
     }
 
+    @DeleteMapping("role/{roleId}/permission/{permissionId}")
+    public void getRolePermissionByRoleAndPermission(@PathVariable String roleId, @PathVariable String permissionId){
+        RolePermission theRolePermission = this.theRolePermissionRepository.getRolePermissionByRoleAndPermission(roleId, permissionId);
+        if (theRolePermission != null) {
+            this.theRolePermissionRepository.delete(theRolePermission);
+        } else {
+            throw new RuntimeException("No se encontró relación UserRole con ese userId y roleId");
+        }
+    }
+
+    @GetMapping("permissionsToAdd/{roleId}")
+    public List<Permission> getRolesToAddUser(@PathVariable String roleId) {
+        List<RolePermission> rolePermissions = theRolePermissionRepository.getPermissionsByRole(roleId);
+        List<String> assignedPermissionIds = rolePermissions.stream()
+                .map(ur -> ur.getPermission().get_id())
+                .toList();
+        return thePermissionRepository.findByIdNotIn(assignedPermissionIds);
+    }
 }
