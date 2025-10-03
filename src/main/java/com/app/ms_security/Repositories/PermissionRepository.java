@@ -5,9 +5,14 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface PermissionRepository extends MongoRepository<Permission, String> {
     @Query("{'url':?0,'method':?1}")
     Permission getPermission(String url,
                              String method);
+
+    @Query("{ '_id': { $nin: ?0 } }")
+    List<Permission> findByIdNotIn(List<String> ids);
 }
