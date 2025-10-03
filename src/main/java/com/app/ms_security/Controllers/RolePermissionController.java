@@ -7,11 +7,14 @@ import com.app.ms_security.Models.UserRole;
 import com.app.ms_security.Repositories.RoleRepository;
 import com.app.ms_security.Repositories.PermissionRepository;
 import com.app.ms_security.Repositories.RolePermissionRepository;
+import com.app.ms_security.dto.PermissionFlagDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @CrossOrigin
 @RestController
@@ -33,20 +36,21 @@ public class RolePermissionController {
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("role/{roleId}/permission/{permissionId}")
     public RolePermission create(@PathVariable String roleId,
-                                 @PathVariable String permissionId){
-        Role theRole=this.theRoleRepository.findById(roleId)
+                                 @PathVariable String permissionId) {
+        Role theRole = this.theRoleRepository.findById(roleId)
                 .orElse(null);
-        Permission thePermission=this.thePermissionRepository.findById((permissionId))
+        Permission thePermission = this.thePermissionRepository.findById((permissionId))
                 .orElse(null);
-        if(theRole!=null && thePermission!=null){
-            RolePermission newRolePermission=new RolePermission();
+        if (theRole != null && thePermission != null) {
+            RolePermission newRolePermission = new RolePermission();
             newRolePermission.setRole(theRole);
             newRolePermission.setPermission(thePermission);
             return this.theRolePermissionRepository.save(newRolePermission);
-        }else{
+        } else {
             return null;
         }
     }
+
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("{id}")
     public void delete(@PathVariable String id) {
@@ -57,13 +61,14 @@ public class RolePermissionController {
             this.theRolePermissionRepository.delete(theRolePermission);
         }
     }
+
     @GetMapping("role/{roleId}")
-    public List<Permission> findPermissionsByRole(@PathVariable String roleId){
+    public List<Permission> findPermissionsByRole(@PathVariable String roleId) {
         return this.theRolePermissionRepository.getPermissionsByRole(roleId).stream().map(RolePermission::getPermission).toList();
     }
 
     @DeleteMapping("role/{roleId}/permission/{permissionId}")
-    public void getRolePermissionByRoleAndPermission(@PathVariable String roleId, @PathVariable String permissionId){
+    public void getRolePermissionByRoleAndPermission(@PathVariable String roleId, @PathVariable String permissionId) {
         RolePermission theRolePermission = this.theRolePermissionRepository.getRolePermissionByRoleAndPermission(roleId, permissionId);
         if (theRolePermission != null) {
             this.theRolePermissionRepository.delete(theRolePermission);
@@ -79,5 +84,35 @@ public class RolePermissionController {
                 .map(ur -> ur.getPermission().get_id())
                 .toList();
         return thePermissionRepository.findByIdNotIn(assignedPermissionIds);
+    }
+
+    @GetMapping("role/{roleId}/permissions")
+    public Map <String, PermissionFlagDto> getPermissionsForCheck(@PathVariable String roleId) {
+        List<Permission> permissions = findPermissionsByRole(roleId);
+
+        Map<String, PermissionFlagDto> result = new LinkedHashMap<>();
+
+        for (Permission p : permissions){
+            if (p == null || p.getModel() == null || p.getMethod() == null || p.getUrl() == null) continue;
+
+            final String model  = p.getModel().trim();
+            final String method = p.getMethod().trim().toUpperCase();
+            final String url    = p.getUrl().trim();
+
+            PermissionFlagDto flags = result.computeIfAbsent(model, k -> new PermissionFlagDto());
+
+            switch (method) {
+                case "GET" -> {
+                    if (url.endsWith("?")) flags.setView(true);
+                    else flags.setList(true);
+                }
+                case "POST" -> flags.setCreate(true);
+                case "PUT", "PATCH" -> flags.setUpdate(true);
+                case "DELETE" -> flags.setDelete(true);
+                default -> {}
+            }
+
+        }
+        return result;
     }
 }
