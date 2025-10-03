@@ -52,8 +52,9 @@ public class UsersController {
         if (actualUser != null) {
             if (newUser.getName() != null) actualUser.setName(newUser.getName());
             if (newUser.getEmail() != null) actualUser.setEmail(newUser.getEmail());
-            if (newUser.getPassword() != null) actualUser.setPassword(this.theEncryptionService.convertSHA256(newUser.getPassword()));
-
+            if (newUser.getPassword() != null)
+                actualUser.setPassword(this.theEncryptionService.convertSHA256(newUser.getPassword()));
+            if (newUser.getIsOauth() != null) actualUser.setIsOauth(newUser.getIsOauth());
             this.theUserRepository.save(actualUser);
             return actualUser;
         } else {
