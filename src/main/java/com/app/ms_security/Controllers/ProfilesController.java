@@ -166,7 +166,7 @@ public class ProfilesController {
         return this.theProfilesRepository.findByUserId(theUser.get_id());
     }
 
-    @PatchMapping("{id}/2fa")
+    @PatchMapping("{id}/twoFa")
     public Map<String,Object> toggle2FA(@PathVariable String id, @RequestBody Map<String,Boolean> body){
         Boolean enable = body.get("enable");
         if (enable == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Falta enable");
