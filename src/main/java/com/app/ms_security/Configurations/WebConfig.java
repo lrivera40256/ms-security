@@ -11,7 +11,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Autowired
     private SecurityInterceptor securityInterceptor;
 
-    /*@Override
+@Override
     public void addInterceptors(InterceptorRegistry registry) {
 
 
@@ -21,5 +21,5 @@ public class WebConfig implements WebMvcConfigurer {
 
 
 
-    }      */
+    }
 }
