@@ -8,10 +8,12 @@ import com.app.ms_security.Repositories.RoleRepository;
 import com.app.ms_security.Repositories.PermissionRepository;
 import com.app.ms_security.Repositories.RolePermissionRepository;
 import com.app.ms_security.dto.PermissionFlagDto;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,7 +87,46 @@ public class RolePermissionController {
                 .toList();
         return thePermissionRepository.findByIdNotIn(assignedPermissionIds);
     }
+    @PatchMapping("check")
+    public  void  saveCheckValidate(@RequestBody Map <String, Object>theResponse,  final HttpServletResponse response) {
+        String method=theResponse.get("method").toString();
+        String model=theResponse.get("model").toString();
+        String roleId=theResponse.get("roleId").toString();
+        Boolean cheked=theResponse.get("checked").toString().equals("true");
+        Role role =theRoleRepository.findById(roleId).orElse(null);
+        if (role == null) {response.setStatus(HttpServletResponse.SC_BAD_REQUEST);return ;}
 
+        String url="/api/"+model+"s";
+        if(method.equals("view") || method.equals("update")||method.equals("delete")) url=url+"/?";
+        switch (method) {
+            case "view","list"->method="GET";
+            case "update"->method="PATCH";
+            case "delete"->method="DELETE";
+            case "add"->method="POST";
+            default -> method="";
+        }
+        Permission permission =thePermissionRepository.getPermission(url,method);
+        if (permission == null) {response.setStatus(HttpServletResponse.SC_BAD_REQUEST);return ;}
+        RolePermission theRolePermission =theRolePermissionRepository.getRolePermission(roleId, permission.get_id());
+        if (cheked) {
+            if (theRolePermission!=null) {response.setStatus(HttpServletResponse.SC_BAD_REQUEST);}
+            else {
+                RolePermission newRolePermission = new RolePermission();
+                newRolePermission.setPermission(permission);
+                newRolePermission.setRole(role);
+                this.theRolePermissionRepository.save(newRolePermission);
+
+            }
+
+        }else {
+            if (theRolePermission==null) {response.setStatus(HttpServletResponse.SC_BAD_REQUEST);return ;}
+            else {
+                theRolePermissionRepository.delete(theRolePermission);
+            }
+        }
+
+
+    }
     @GetMapping("role/{roleId}/permissions")
     public Map <String, PermissionFlagDto> getPermissionsForCheck(@PathVariable String roleId) {
         List<Permission> permissions = findPermissionsByRole(roleId);
@@ -104,7 +145,6 @@ public class RolePermissionController {
             final String url    = p.getUrl().trim();
 
             PermissionFlagDto flags = result.computeIfAbsent(model, k -> new PermissionFlagDto());
-
             switch (method) {
                 case "GET" -> {
                     if (url.endsWith("?")) flags.setView(true);
