@@ -81,10 +81,11 @@ public class SecurityController {
     }
     */
 
-    public HashMap<String, Object> loginOauth(HashMap<String, Object> theResponse, String idToken) throws IOException {
+    public HashMap<String, Object> loginOauth(HashMap<String, Object> theResponse, String idToken, HttpServletResponse response) throws IOException {
 
         if (idToken == null) {
             theResponse.put("status", HttpServletResponse.SC_BAD_REQUEST);
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return theResponse;
         }
         try {
@@ -93,7 +94,7 @@ public class SecurityController {
             String name = decoded.getName();
             String photo = decoded.getPicture();
 
-            if (email == null || email.isBlank()) theResponse.put("status", HttpServletResponse.SC_BAD_REQUEST);
+            if (email == null || email.isBlank()) {theResponse.put("status", HttpServletResponse.SC_BAD_REQUEST);response.setStatus(HttpServletResponse.SC_BAD_REQUEST);}
             User theActualUser = this.theUserRepository.getUserByEmail(email);
             if (theActualUser == null) {
                 theActualUser = new User();
@@ -110,11 +111,13 @@ public class SecurityController {
             }
             if (!theActualUser.getIsOauth()) {
                 theResponse.put("status", HttpServletResponse.SC_UNAUTHORIZED);
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
                 return theResponse;
             }
-
+            response.setStatus(HttpServletResponse.SC_OK);
             theResponse.put("status", HttpServletResponse.SC_OK);
         } catch (Exception e) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             theResponse.put("status", HttpServletResponse.SC_UNAUTHORIZED);
             theResponse.put("message", e.getMessage());
         }
@@ -125,13 +128,15 @@ public class SecurityController {
     // ...existing code...
     public HashMap<String, Object> loginJwt(HashMap<String, Object> theResponse,
                                             User theActualUser,
-                                            User theNewUser) {
+                                            User theNewUser,
+                                            HttpServletResponse response) {
         // Validaciones básicas
         if (theActualUser == null ||
                 Boolean.TRUE.equals(theActualUser.getIsOauth()) ||
                 !theActualUser.getPassword()
                         .equals(theEncryptionService.convertSHA256(theNewUser.getPassword()))) {
             theResponse.put("status", HttpServletResponse.SC_UNAUTHORIZED);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return theResponse;
         }
 
@@ -177,9 +182,9 @@ public class SecurityController {
         HashMap<String, Object> theResponse = new HashMap<>();
         User theNewUser = request.getUser();
         if (theNewUser != null) {
-            theResponse = loginJwt(theResponse, this.theUserRepository.getUserByEmail(theNewUser.getEmail()), theNewUser);
+            theResponse = loginJwt(theResponse, this.theUserRepository.getUserByEmail(theNewUser.getEmail()), theNewUser,response);
         } else {
-            theResponse = loginOauth(theResponse, request.getToken());
+            theResponse = loginOauth(theResponse, request.getToken(),response);
         }
         return theResponse;
 
@@ -238,6 +243,7 @@ public class SecurityController {
         User theUser = this.theUserRepository.getUserByEmail(newUser.getEmail());
         if (theUser == null) {
             newUser.setPassword(this.theEncryptionService.convertSHA256(newUser.getPassword()));
+            newUser.setIsOauth(false);
             return this.theUserRepository.save(newUser);
         } else {
             throw new Exception("El usuario ya existe");
