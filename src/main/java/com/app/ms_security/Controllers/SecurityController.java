@@ -47,8 +47,9 @@ public class SecurityController {
     private AuthServices authServices;
     @Autowired
     private SessionService sessionService;
+    @Autowired
     private PhotoRepository thePhotoRepository;
-
+    @Autowired
     private ValidatorsService theValidatorsService;
 
     @PostMapping("permissions-validation")
@@ -100,7 +101,7 @@ public class SecurityController {
                 theActualUser.setIsOauth(true);
                 Photo thePhoto = new Photo();
                 thePhoto.setUrl(photo);
-                thePhoto=thePhotoRepository.save(thePhoto);
+                thePhoto = thePhotoRepository.save(thePhoto);
 
                 theActualUser = theUserRepository.save(theActualUser);
                 Profile theProfile = new Profile(null, theActualUser, thePhoto);
