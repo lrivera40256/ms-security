@@ -89,8 +89,12 @@ public class RolePermissionController {
     @GetMapping("role/{roleId}/permissions")
     public Map <String, PermissionFlagDto> getPermissionsForCheck(@PathVariable String roleId) {
         List<Permission> permissions = findPermissionsByRole(roleId);
-
+        List<Permission> totalPermission=thePermissionRepository.findAll();
         Map<String, PermissionFlagDto> result = new LinkedHashMap<>();
+        for(Permission permission:totalPermission) {
+            final String model  = permission.getModel().trim();
+            result.computeIfAbsent(model, k -> new PermissionFlagDto());
+        }
 
         for (Permission p : permissions){
             if (p == null || p.getModel() == null || p.getMethod() == null || p.getUrl() == null) continue;
