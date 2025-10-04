@@ -10,6 +10,7 @@ import com.app.ms_security.Repositories.UserRoleRepository;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -36,6 +37,7 @@ public class ValidatorsService {
     private static final String BEARER_PREFIX = "Bearer ";
 
     public boolean validationRolePermission(HttpServletRequest request,
+                                            HttpServletResponse response,
                                             String url,
                                             String method) {
         boolean success = false;
@@ -47,6 +49,7 @@ public class ValidatorsService {
             Permission thePermission = this.thePermissionRepository.getPermission(url, method);
 
             List<UserRole> roles = this.theUserRoleRepository.getRolesByUser(theUser.get_id());
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             int i = 0;
             while (i < roles.size() && success == false) {
                 UserRole actual = roles.get(i);
@@ -55,6 +58,7 @@ public class ValidatorsService {
                     System.out.println("Rol " + theRole.get_id() + " Permission " + thePermission.get_id());
                     RolePermission theRolePermission = this.theRolePermissionRepository.getRolePermission(theRole.get_id(), thePermission.get_id());
                     if (theRolePermission != null) {
+                        response.setStatus(HttpServletResponse.SC_OK);
                         success = true;
                     }
                 } else {
@@ -63,9 +67,13 @@ public class ValidatorsService {
                 i += 1;
             }
 
+        }else {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         }
+
         return success;
     }
+        
 
     public User getUser(final HttpServletRequest request) {
         User theUser = null;

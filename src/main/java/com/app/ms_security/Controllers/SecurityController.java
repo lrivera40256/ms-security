@@ -54,8 +54,9 @@ public class SecurityController {
 
     @PostMapping("permissions-validation")
     public boolean permissionsValidation(final HttpServletRequest request,
+                                         final HttpServletResponse response,
                                          @RequestBody Permission thePermission) {
-        boolean success = this.theValidatorsService.validationRolePermission(request, thePermission.getUrl(), thePermission.getMethod());
+        boolean success = this.theValidatorsService.validationRolePermission(request,response, thePermission.getUrl(), thePermission.getMethod());
         return success;
     }
 
