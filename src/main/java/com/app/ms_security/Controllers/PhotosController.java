@@ -1,6 +1,7 @@
 package com.app.ms_security.Controllers;
 
 import com.app.ms_security.Models.Photo;
+import com.app.ms_security.Services.CloudinaryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,9 @@ public class PhotosController {
     @Autowired
     private PhotoRepository thePhotoRepository;
 
+    @Autowired
+    private CloudinaryService theCloudinaryService;
+
     @GetMapping("")
     public List<Photo> find() {
         return this.thePhotoRepository.findAll();
@@ -30,13 +34,18 @@ public class PhotosController {
 
     @PostMapping("/upload")
     public Photo upload(@RequestParam("file") MultipartFile file) throws Exception {
-        Photo photo = new Photo();
-        photo.setData(file.getBytes());
-        photo.setContentType(file.getContentType());
+        String url = theCloudinaryService.uploadFile(file);
+        Photo photo = new Photo(url);
         return this.thePhotoRepository.save(photo);
     }
 
-    @GetMapping("/view/{id}")
+    @PostMapping("/oauth")
+    public Photo saveOAuthPhoto(@RequestParam("url") String photoUrl) {
+        Photo photo = new Photo(photoUrl);
+        return this.thePhotoRepository.save(photo);
+    }
+
+    /* @GetMapping("/view/{id}")
     public ResponseEntity<byte[]> view(@PathVariable String id) {
         Photo photo = this.thePhotoRepository.findById(id).orElse(null);
         if (photo == null) {
@@ -46,23 +55,21 @@ public class PhotosController {
                 .contentType(MediaType.parseMediaType(photo.getContentType()))
                 .body(photo.getData());
     }
+    */
 
     @PutMapping("{id}")
-    public Photo update(@PathVariable String id, @RequestParam("file")  MultipartFile file) throws Exception {
+    public Photo update(@PathVariable String id, @RequestParam("file") MultipartFile file) throws Exception {
         Photo actualPhoto = this.thePhotoRepository.findById(id).orElse(null);
         if (actualPhoto != null) {
-            actualPhoto.setData(file.getBytes());
-            actualPhoto.setContentType(file.getContentType());
+            String url = theCloudinaryService.uploadFile(file);
+            actualPhoto.setUrl(url);
             return this.thePhotoRepository.save(actualPhoto);
-
-        } else { return null; }
+        }
+        return null;
     }
 
     @DeleteMapping("{id}")
     public void delete(@PathVariable String id) {
-        Photo thePhoto = this.thePhotoRepository.findById(id).orElse(null);
-        if (thePhoto != null) {
-            this.thePhotoRepository.delete(thePhoto);
-        }
+        this.thePhotoRepository.deleteById(id);
     }
 }
