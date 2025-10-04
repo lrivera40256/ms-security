@@ -94,9 +94,10 @@ public class SecurityController {
                 theActualUser = new User();
                 theActualUser.setEmail(email);
                 theActualUser.setName(name);
+                theActualUser.setIsOauth(true);
                 theActualUser = theUserRepository.save(theActualUser);
-                Profile thePermission = new Profile(null, theActualUser, null);
-                theProfileRepository.save(thePermission);
+                Profile theProfile = new Profile(null, theActualUser, null);
+                theProfileRepository.save(theProfile);
             }
             if (!theActualUser.getIsOauth()) {
                 theResponse.put("status", HttpServletResponse.SC_UNAUTHORIZED);
