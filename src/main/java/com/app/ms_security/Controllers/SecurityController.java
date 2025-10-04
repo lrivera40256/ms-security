@@ -47,7 +47,7 @@ public class SecurityController {
     private AuthServices authServices;
     @Autowired
     private SessionService sessionService;
-    @Autowired
+
     private PhotoRepository thePhotoRepository;
 
     private ValidatorsService theValidatorsService;
