@@ -8,6 +8,8 @@ import com.app.ms_security.Repositories.ProfileRepository;
 import com.app.ms_security.Repositories.UserRepository;
 import com.app.ms_security.Services.CloudinaryService;
 import com.app.ms_security.Services.EncryptionService;
+import com.app.ms_security.Services.ValidatorsService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -22,7 +24,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/profiles")
 public class ProfilesController {
-
+    @Autowired
+    private ValidatorsService validatorService;
     @Autowired
     private ProfileRepository theProfilesRepository;
 
@@ -144,9 +147,10 @@ public class ProfilesController {
         }
     }
 
-    @GetMapping("/user/{userId}")
-    public Profile findByUserId(@PathVariable String userId) {
-        return this.theProfilesRepository.findByUserId(userId);
+    @GetMapping("/user")
+    public Profile findByUserId(HttpServletRequest request) {
+        User theUser=validatorService.getUser(request);
+        return this.theProfilesRepository.findByUserId(theUser.get_id());
     }
 
     @PatchMapping("{id}/2fa")
