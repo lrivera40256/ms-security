@@ -36,20 +36,21 @@ public class RolePermissionController {
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("role/{roleId}/permission/{permissionId}")
     public RolePermission create(@PathVariable String roleId,
-                                 @PathVariable String permissionId){
-        Role theRole=this.theRoleRepository.findById(roleId)
+                                 @PathVariable String permissionId) {
+        Role theRole = this.theRoleRepository.findById(roleId)
                 .orElse(null);
-        Permission thePermission=this.thePermissionRepository.findById((permissionId))
+        Permission thePermission = this.thePermissionRepository.findById((permissionId))
                 .orElse(null);
-        if(theRole!=null && thePermission!=null){
-            RolePermission newRolePermission=new RolePermission();
+        if (theRole != null && thePermission != null) {
+            RolePermission newRolePermission = new RolePermission();
             newRolePermission.setRole(theRole);
             newRolePermission.setPermission(thePermission);
             return this.theRolePermissionRepository.save(newRolePermission);
-        }else{
+        } else {
             return null;
         }
     }
+
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("{id}")
     public void delete(@PathVariable String id) {
@@ -60,13 +61,14 @@ public class RolePermissionController {
             this.theRolePermissionRepository.delete(theRolePermission);
         }
     }
+
     @GetMapping("role/{roleId}")
-    public List<Permission> findPermissionsByRole(@PathVariable String roleId){
+    public List<Permission> findPermissionsByRole(@PathVariable String roleId) {
         return this.theRolePermissionRepository.getPermissionsByRole(roleId).stream().map(RolePermission::getPermission).toList();
     }
 
     @DeleteMapping("role/{roleId}/permission/{permissionId}")
-    public void getRolePermissionByRoleAndPermission(@PathVariable String roleId, @PathVariable String permissionId){
+    public void getRolePermissionByRoleAndPermission(@PathVariable String roleId, @PathVariable String permissionId) {
         RolePermission theRolePermission = this.theRolePermissionRepository.getRolePermissionByRoleAndPermission(roleId, permissionId);
         if (theRolePermission != null) {
             this.theRolePermissionRepository.delete(theRolePermission);
