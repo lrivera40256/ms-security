@@ -15,7 +15,9 @@ import com.google.firebase.auth.FirebaseToken;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 
 import java.io.IOException;
@@ -45,6 +47,8 @@ public class SecurityController {
     private FirebaseAuth firebaseAuth;
     @Autowired
     private AuthServices authServices;
+    @Autowired
+    private SessionService sessionService;
 
     private ValidatorsService theValidatorsService;
 
@@ -133,7 +137,6 @@ public class SecurityController {
             profile = theProfileRepository.save(profile);
         }
 
-        // Verificar flag en Profile (NO en User)
         if (Boolean.TRUE.equals(profile.getTwoFactorEnabled())) {
             String code2FA = theNotificationService.generateCode2FA();
             theNotificationService.send2FACode(theActualUser.getEmail(), code2FA);
@@ -153,12 +156,15 @@ public class SecurityController {
         // Sin 2FA: emitir token directo
         String token = theJwtService.generateToken(theActualUser);
         List<Permission> permissions = authServices.getRolesByUser(theActualUser);
+        Session session = new Session(token, null, null);
+        session.setUser(theActualUser);
+        Session savedSession = theSessionRepository.save(session);
         theResponse.put("2fa_required", false);
         theResponse.put("token", token);
         theResponse.put("permissions", permissions);
         return theResponse;
     }
-// ...existing code...
+
 
     @PostMapping("login")
     public HashMap<String, Object> login(@RequestBody LoginRequest request,
@@ -220,5 +226,30 @@ public class SecurityController {
                     "Código incorrecto. Intentos restantes: " + restantes);
             return theResponse;
         }
+    }
+
+    @PostMapping("register")
+    public User register(@RequestBody User newUser) throws Exception {
+        User theUser = this.theUserRepository.getUserByEmail(newUser.getEmail());
+        if (theUser == null) {
+            newUser.setPassword(this.theEncryptionService.convertSHA256(newUser.getPassword()));
+            return this.theUserRepository.save(newUser);
+        } else {
+            throw new Exception("El usuario ya existe");
+        }
+    }
+
+    @DeleteMapping("logout")
+    public Map<String, Object> logout(@RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (authorization == null || authorization.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Falta header Authorization");
+        }
+        String rawToken = authorization.startsWith("Bearer ") ? authorization.substring(7) : authorization;
+        User user = theJwtService.getUserFromToken(rawToken);
+        if (user == null || user.get_id() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token inválido");
+        }
+        sessionService.deleteAllByUser(user.get_id());
+        return Map.of("status", "ok", "message", "Logout exitoso");
     }
 }
