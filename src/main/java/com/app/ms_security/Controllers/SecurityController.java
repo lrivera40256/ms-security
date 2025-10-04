@@ -2,10 +2,8 @@ package com.app.ms_security.Controllers;
 
 import com.app.ms_security.Configurations.FirebaseConfig;
 import com.app.ms_security.Entities.LoginRequest;
-import com.app.ms_security.Models.Permission;
-import com.app.ms_security.Models.Profile;
-import com.app.ms_security.Models.Session;
-import com.app.ms_security.Models.User;
+import com.app.ms_security.Models.*;
+import com.app.ms_security.Repositories.PhotoRepository;
 import com.app.ms_security.Repositories.ProfileRepository;
 import com.app.ms_security.Repositories.SessionRepository;
 import com.app.ms_security.Repositories.UserRepository;
@@ -49,6 +47,7 @@ public class SecurityController {
     private AuthServices authServices;
     @Autowired
     private SessionService sessionService;
+    private PhotoRepository thePhotoRepository;
 
     private ValidatorsService theValidatorsService;
 
@@ -99,8 +98,12 @@ public class SecurityController {
                 theActualUser.setEmail(email);
                 theActualUser.setName(name);
                 theActualUser.setIsOauth(true);
+                Photo thePhoto = new Photo();
+                thePhoto.setUrl(photo);
+                thePhoto=thePhotoRepository.save(thePhoto);
+
                 theActualUser = theUserRepository.save(theActualUser);
-                Profile theProfile = new Profile(null, theActualUser, null);
+                Profile theProfile = new Profile(null, theActualUser, thePhoto);
                 theProfileRepository.save(theProfile);
             }
             if (!theActualUser.getIsOauth()) {
