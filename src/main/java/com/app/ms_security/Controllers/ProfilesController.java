@@ -28,16 +28,12 @@ public class ProfilesController {
     private ValidatorsService validatorService;
     @Autowired
     private ProfileRepository theProfilesRepository;
-
     @Autowired
     private UserRepository theUserRepository;
-
     @Autowired
     private PhotoRepository photoRepository;
-
     @Autowired
     private EncryptionService encryptionService;
-
     @Autowired
     private CloudinaryService cloudinaryService;
 
@@ -70,24 +66,33 @@ public class ProfilesController {
             photoRepository.findById(photoId).ifPresent(profile::setPhoto);
         }
 
+        // Actualizar URL sin crear nueva entidad
         if (changes.containsKey("photoUrl")) {
             String photoUrl = (String) changes.get("photoUrl");
             if (photoUrl != null && !photoUrl.isBlank()) {
-                Photo newPhoto = photoRepository.save(new Photo(photoUrl));
-                profile.setPhoto(newPhoto);
+                Photo p = profile.getPhoto();
+                if (p == null) {
+                    p = new Photo(photoUrl);
+                } else {
+                    p.setUrl(photoUrl);
+                }
+                p = photoRepository.save(p);
+                profile.setPhoto(p);
             }
         }
 
+        // Campo genérico "photo" (reutiliza si existe)
         if (changes.containsKey("photo")) {
             String value = (String) changes.get("photo");
             if (value != null && !value.isBlank()) {
-                photoRepository.findById(value).ifPresentOrElse(
-                        profile::setPhoto,
-                        () -> {
-                            Photo p = photoRepository.save(new Photo(value));
-                            profile.setPhoto(p);
-                        }
-                );
+                Photo p = profile.getPhoto();
+                if (p == null) {
+                    p = new Photo(value);
+                } else {
+                    p.setUrl(value);
+                }
+                p = photoRepository.save(p);
+                profile.setPhoto(p);
             }
         }
 
@@ -133,8 +138,16 @@ public class ProfilesController {
         }
         Profile profile = theProfilesRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Perfil no encontrado"));
+
         String url = cloudinaryService.uploadFile(file);
-        Photo photo = photoRepository.save(new Photo(url));
+
+        Photo photo = profile.getPhoto();
+        if (photo == null) {
+            photo = new Photo(url);
+        } else {
+            photo.setUrl(url);
+        }
+        photo = photoRepository.save(photo);
         profile.setPhoto(photo);
         return theProfilesRepository.save(profile);
     }
@@ -149,7 +162,7 @@ public class ProfilesController {
 
     @GetMapping("/user")
     public Profile findByUserId(HttpServletRequest request) {
-        User theUser=validatorService.getUser(request);
+        User theUser = validatorService.getUser(request);
         return this.theProfilesRepository.findByUserId(theUser.get_id());
     }
 
