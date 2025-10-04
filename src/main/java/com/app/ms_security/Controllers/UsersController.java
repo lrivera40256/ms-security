@@ -35,6 +35,15 @@ public class UsersController {
         return this.theUserRepository.findById(id).orElse(null);
     }
 
+    @GetMapping("email/{email}")
+    public User findByEmail(@PathVariable String email) {
+        User user = theUserRepository.getUserByEmail(email);
+        if (user == null) {
+            return null;
+        }
+        return user;
+    }
+
     @PostMapping
     public User create(@RequestBody User newUser) throws Exception {
         User theUser = this.theUserRepository.getUserByEmail(newUser.getEmail());
