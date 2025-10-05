@@ -3,10 +3,7 @@ package com.app.ms_security.Controllers;
 import com.app.ms_security.Configurations.FirebaseConfig;
 import com.app.ms_security.Entities.LoginRequest;
 import com.app.ms_security.Models.*;
-import com.app.ms_security.Repositories.PhotoRepository;
-import com.app.ms_security.Repositories.ProfileRepository;
-import com.app.ms_security.Repositories.SessionRepository;
-import com.app.ms_security.Repositories.UserRepository;
+import com.app.ms_security.Repositories.*;
 import com.app.ms_security.Services.*;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
@@ -31,6 +28,10 @@ import java.util.Map;
 public class SecurityController {
     @Autowired
     private UserRepository theUserRepository;
+    @Autowired
+    private UserRoleRepository theUserRoleRepository;
+    @Autowired
+    private RoleRepository theRoleRepository;
     @Autowired
     private EncryptionService theEncryptionService;
     @Autowired
@@ -97,6 +98,7 @@ public class SecurityController {
             if (email == null || email.isBlank()) {theResponse.put("status", HttpServletResponse.SC_BAD_REQUEST);response.setStatus(HttpServletResponse.SC_BAD_REQUEST);}
             User theActualUser = this.theUserRepository.getUserByEmail(email);
             if (theActualUser == null) {
+                Role theRole = this.theRoleRepository.findById("68e16dce4a19af4449ca56da").orElse(null);
                 theActualUser = new User();
                 theActualUser.setEmail(email);
                 theActualUser.setName(name);
@@ -106,9 +108,13 @@ public class SecurityController {
                 thePhoto = thePhotoRepository.save(thePhoto);
 
                 theActualUser = theUserRepository.save(theActualUser);
+                UserRole theUserRole = new UserRole();
+                theUserRole.setRole(theRole);
+                theUserRole.setUser(theActualUser);
+                theUserRoleRepository.save(theUserRole);
                 Profile theProfile = new Profile(null, theActualUser, thePhoto);
                 theProfileRepository.save(theProfile);
-            }
+               }
             if (!theActualUser.getIsOauth()) {
                 theResponse.put("status", HttpServletResponse.SC_UNAUTHORIZED);
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
@@ -242,9 +248,17 @@ public class SecurityController {
     public User register(@RequestBody User newUser) throws Exception {
         User theUser = this.theUserRepository.getUserByEmail(newUser.getEmail());
         if (theUser == null) {
+
             newUser.setPassword(this.theEncryptionService.convertSHA256(newUser.getPassword()));
+
             newUser.setIsOauth(false);
-            return this.theUserRepository.save(newUser);
+            Role theRole = this.theRoleRepository.findById("68e16dce4a19af4449ca56da").orElse(null);
+            theUser= this.theUserRepository.save(newUser); UserRole theUserRole = new UserRole();
+            theUserRole.setRole(theRole);
+            theUserRole.setUser(theUser);
+            theUserRoleRepository.save(theUserRole);
+            return theUser;
+
         } else {
             throw new Exception("El usuario ya existe");
         }
