@@ -1,6 +1,7 @@
 package com.app.ms_security.Controllers;
 
 import com.app.ms_security.Models.Role;
+import com.app.ms_security.Models.User;
 import com.app.ms_security.Repositories.RoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +24,15 @@ public class RolesController {
     @GetMapping("{id}")
     public Role findById(@PathVariable String id) {
         return this.theRoleRepository.findById(id).orElse(null);
+    }
+
+    @GetMapping("name/{name}")
+    public Role findByName(@PathVariable String name) {
+        Role role = theRoleRepository.getRoleByName(name);
+        if (role == null) {
+            return null;
+        }
+        return role;
     }
 
     @PostMapping

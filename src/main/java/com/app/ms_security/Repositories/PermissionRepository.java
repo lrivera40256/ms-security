@@ -15,4 +15,7 @@ public interface PermissionRepository extends MongoRepository<Permission, String
 
     @Query("{ '_id': { $nin: ?0 } }")
     List<Permission> findByIdNotIn(List<String> ids);
+
+    @Query("{ 'model': ?0 }")
+    public Permission findByModel(String model);
 }

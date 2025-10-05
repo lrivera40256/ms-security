@@ -35,9 +35,9 @@ public class UsersController {
         return this.theUserRepository.findById(id).orElse(null);
     }
 
-    @GetMapping("email/{email}")
-    public User findByEmail(@PathVariable String email) {
-        User user = theUserRepository.getUserByEmail(email);
+    @GetMapping("name/{name}")
+    public User findByEmail(@PathVariable String name) {
+        User user = theUserRepository.getUserByName(name);
         if (user == null) {
             return null;
         }
