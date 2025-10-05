@@ -2,6 +2,7 @@ package com.app.ms_security.Controllers;
 
 import com.app.ms_security.Models.Permission;
 import com.app.ms_security.Models.Permission;
+import com.app.ms_security.Models.Role;
 import com.app.ms_security.Repositories.PermissionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,16 @@ public class PermissionsController {
         return this.thePermissionRepository.findAll();
     }
     @ResponseStatus(HttpStatus.CREATED)
+
+    @GetMapping("model/{model}")
+    public Permission findByName(@PathVariable String model) {
+        Permission permission = thePermissionRepository.findByModel(model);
+        if (permission == null) {
+            return null;
+        }
+        return permission;
+    }
+
     @PostMapping
     public Permission create(@RequestBody Permission theNewPermission){
         return this.thePermissionRepository.save(theNewPermission);

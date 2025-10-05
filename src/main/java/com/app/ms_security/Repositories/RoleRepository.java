@@ -9,4 +9,7 @@ import java.util.List;
 public interface RoleRepository extends MongoRepository<Role, String> {
     @Query("{ '_id': { $nin: ?0 } }")
     List<Role> findByIdNotIn(List<String> roleIds);
+
+    @Query("{ 'name': ?0 }")
+    public Role getRoleByName(String roleName);
 }
