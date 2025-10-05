@@ -52,6 +52,8 @@ public class SecurityController {
     private PhotoRepository thePhotoRepository;
     @Autowired
     private ValidatorsService theValidatorsService;
+    @Autowired
+    private RecaptchaService recaptchaService;
 
     @PostMapping("permissions-validation")
     public boolean permissionsValidation(final HttpServletRequest request,
@@ -135,7 +137,25 @@ public class SecurityController {
     public HashMap<String, Object> loginJwt(HashMap<String, Object> theResponse,
                                             User theActualUser,
                                             User theNewUser,
-                                            HttpServletResponse response) {
+                                            HttpServletResponse response,
+                                            String captchaToken,
+                                            HttpServletRequest request) {
+        if (captchaToken == null || captchaToken.isBlank()) {
+            theResponse.put("status", HttpServletResponse.SC_BAD_REQUEST);
+            theResponse.put("message", "Falta captcha");
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            return theResponse;
+        }
+
+        //  2. Verificar captcha con el servicio de Google
+        var verify = recaptchaService.verify(captchaToken, request.getRemoteAddr());
+        if (verify == null || !verify.success()) {
+            theResponse.put("status", HttpServletResponse.SC_FORBIDDEN);
+            theResponse.put("message", "Captcha inválido");
+            theResponse.put("errors", verify != null ? verify.errorCodes() : new String[]{"verification_failed"});
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            return theResponse;
+        }
         // Validaciones básicas
         if (theActualUser == null ||
                 Boolean.TRUE.equals(theActualUser.getIsOauth()) ||
@@ -184,11 +204,12 @@ public class SecurityController {
 
     @PostMapping("login")
     public HashMap<String, Object> login(@RequestBody LoginRequest request,
+                                         final HttpServletRequest httpRequest,
                                          final HttpServletResponse response) throws IOException {
         HashMap<String, Object> theResponse = new HashMap<>();
         User theNewUser = request.getUser();
         if (theNewUser != null) {
-            theResponse = loginJwt(theResponse, this.theUserRepository.getUserByEmail(theNewUser.getEmail()), theNewUser,response);
+            theResponse = loginJwt(theResponse, this.theUserRepository.getUserByEmail(theNewUser.getEmail()), theNewUser,response, request.getCaptcha(), httpRequest);
         } else {
             theResponse = loginOauth(theResponse, request.getToken(),response);
         }
