@@ -1,9 +1,6 @@
 package com.app.ms_security.Controllers;
 
-import com.app.ms_security.Models.Role;
-import com.app.ms_security.Models.Permission;
-import com.app.ms_security.Models.RolePermission;
-import com.app.ms_security.Models.UserRole;
+import com.app.ms_security.Models.*;
 import com.app.ms_security.Repositories.RoleRepository;
 import com.app.ms_security.Repositories.PermissionRepository;
 import com.app.ms_security.Repositories.RolePermissionRepository;
@@ -17,6 +14,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.*;
+import java.util.stream.*;
 
 @CrossOrigin
 @RestController
@@ -32,6 +31,37 @@ public class RolePermissionController {
     @GetMapping("")
     public List<RolePermission> find() {
         return this.theRolePermissionRepository.findAll();
+
+    }
+    @PostMapping("sustentacion")
+    public List<Permission> findByLista(@RequestBody List<Integer> numbers) {
+        numbers.sort(Comparator.reverseOrder());
+        List<RolePermission> rolePermissions =this.theRolePermissionRepository.findAll() ;
+        HashMap<String,Integer> map = new HashMap<>();
+        for (RolePermission rolePermission : rolePermissions) {
+            Permission permission=rolePermission.getPermission();
+            int value =map.getOrDefault(permission.get_id(),0);
+            map.put(permission.get_id(), value + 1);
+        }
+        List<String> permisosID=new ArrayList<>();
+        for(Integer number : numbers){
+             permisosID.addAll(map.entrySet().stream()
+                    .filter(entry -> entry.getValue() == number)
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toList()));
+
+        }
+        List<Permission>permissions=new ArrayList<>();
+        for(String key : permisosID){
+            Permission permission=thePermissionRepository.findById(key).orElse(null);
+            permissions.add(permission);
+        }
+        return permissions;
+
+
+
+
+
 
     }
 
