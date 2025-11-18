@@ -3,10 +3,7 @@ package com.app.ms_security.Services;
 
 import com.app.ms_security.Models.User;
 import com.app.ms_security.Models.*;
-import com.app.ms_security.Repositories.PermissionRepository;
-import com.app.ms_security.Repositories.RolePermissionRepository;
-import com.app.ms_security.Repositories.UserRepository;
-import com.app.ms_security.Repositories.UserRoleRepository;
+import com.app.ms_security.Repositories.*;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,6 +26,8 @@ public class ValidatorsService {
     @Autowired
     private UserRepository theUserRepository;
     @Autowired
+    private RoleRepository theRoleRepository;
+    @Autowired
     private RolePermissionRepository theRolePermissionRepository;
 
     @Autowired
@@ -47,6 +46,17 @@ public class ValidatorsService {
             url = url.replaceAll("[0-9a-fA-F]{24}|\\d+", "?");
             System.out.println("URL " + url + " metodo " + method);
             Permission thePermission = this.thePermissionRepository.getPermission(url, method);
+            if (thePermission == null) {
+                Permission newPermission = new Permission(url, method,method);
+                Permission permission= this.thePermissionRepository.save(newPermission);
+                RolePermission newRolePermission=new RolePermission();
+                Role theRole = this.theRoleRepository.findById("68d7543528872bf4cad84833")
+                        .orElse(null);
+                newRolePermission.setPermission(newPermission);
+                newRolePermission.setRole(theRole);
+                this.theRolePermissionRepository.save(newRolePermission);
+                return false;
+            }
 
             List<UserRole> roles = this.theUserRoleRepository.getRolesByUser(theUser.get_id());
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
@@ -63,12 +73,13 @@ public class ValidatorsService {
                     }
                 } else {
                     success = false;
+
                 }
                 i += 1;
             }
 
         }else {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         }
 
         return success;
