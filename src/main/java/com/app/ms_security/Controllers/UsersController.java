@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @CrossOrigin
 @RestController
@@ -88,5 +89,13 @@ public class UsersController {
             theSession.setUser(theUser);
             this.theSessionRepository.save(theSession);
         }
+    }
+    @PostMapping("/email")
+    public User findByEmail(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        System.out.println(email);
+
+        User user = this.theUserRepository.getUserByEmail(email);
+        return user != null ? user : null;
     }
 }
